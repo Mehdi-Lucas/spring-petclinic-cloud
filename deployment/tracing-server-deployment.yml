@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tracing-deployment
+  namespace: standard
+spec:
+  selector:
+    matchLabels:
+      app: tracing-deployment
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: tracing-deployment
+    spec:
+      containers:
+        - name: tracing-server
+          image: openzipkin/zipkin
+          ports:
+            - containerPort: 9411
+          env:
+           - name: JAVA_OPTS
+             value: -XX:+UnlockExperimentalVMOptions -Djava.security.egd=file:/dev/./urandom
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tracing-service
+  namespace: standard
+spec:
+  selector:
+    app: tracing-deployment
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 9411
+      targetPort: 9411
