@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discovery-deployment
+  namespace: standard
+spec:
+  selector:
+    matchLabels:
+      app: discovery-deployment
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: discovery-deployment
+    spec:
+      containers:
+        - name: discovery-server
+          image: springcommunity/spring-petclinic-cloud-discovery-server
+          ports:
+            - containerPort: 8761
+          resources:
+            limits:
+              memory: 512M
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: discovery-service
+  namespace: standard
+spec:
+  selector:
+    app: discovery-deployment
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 8761
+      targetPort: 8761
