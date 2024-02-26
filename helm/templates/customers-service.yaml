@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.customers.containerName }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.customers.containerName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.customers.containerName }}
+    spec:
+      initContainers:
+      - name: wait-for-config-server-and-discovery-server
+        image: busybox
+        command:
+          - "/bin/sh"
+          - "-c"
+          - |
+            until nc -z -w 2 config-server-service 8888 && nc -z -w 2 discovery-server-service 8761; do
+              echo "Waiting for config-server and discovery server to be ready..."
+              sleep 5
+            done
+      containers:
+        - name: {{ .Values.customers.containerName }}
+          image: {{ .Values.customers.image }}
+          ports:
+            - containerPort: 8081
+          resources:
+            limits:
+              memory: {{ .Values.customers.memLimit }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.customers.containerName }}-service
+spec:
+  selector:
+    app: {{ .Values.customers.containerName }}
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+  type: NodePort
