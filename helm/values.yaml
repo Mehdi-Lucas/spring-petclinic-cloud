@@ -1,0 +1,57 @@
+config:
+  image: springcommunity/spring-petclinic-cloud-config-server
+  #image: springcommunity/spring-petclinic-config-server
+  containerName: config-server
+  memLimit: 700M
+  ports:
+    - 8888:8888
+
+discovery:
+  image: springcommunity/spring-petclinic-cloud-discovery-service
+  #image: springcommunity/spring-petclinic-discovery-server
+  containerName: discovery-server
+  memLimit: 700M
+  ports:
+    - 8761:8761
+
+customers:
+  image: springcommunity/spring-petclinic-cloud-customers-service
+  containerName: customers-service
+  memLimit: 700M
+  ports:
+    - 8081:8081
+
+visits:
+  image: springcommunity/spring-petclinic-cloud-visits-service
+  containerName: visits-service
+  memLimit: 700M
+  ports:
+    - 8082:8082
+
+vets:
+  image: springcommunity/spring-petclinic-cloud-vets-service
+  containerName: vets-service
+  memLimit: 512M
+  ports:
+    - 8083:8083
+
+api:
+  image: springcommunity/spring-petclinic-cloud-api-gateway
+  containerName: api-gateway
+  memLimit: 512M
+  ports:
+    - 8080:8080
+    
+tracing:
+  image: openzipkin/zipkin
+  containerName: tracing-server
+  memLimit: 512M
+  ports:
+    - 9411:9411
+
+admin:
+  image: springcommunity/spring-petclinic-cloud-admin-server
+  containerName: admin-server
+  memLimit: 512M
+  ports:
+    - 9090:9090
