@@ -1,0 +1,35 @@
+piVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.discovery.containerName }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.discovery.containerName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.discovery.containerName }}
+    spec:
+      initContainers:
+      - name: wait-for-config-server
+        image: busybox
+        command:
+          - "/bin/sh"
+          - "-c"
+          - |
+            until nc -z -w 2 config-server-service 8888; do
+              echo "Waiting for config-server to be ready..."
+              sleep 5
+            done
+      containers:
+        - name: {{ .Values.discovery.containerName }}
+          image: {{ .Values.discovery.image }}
+          ports:
+            - containerPort: 8761
+          resources:
+            limits:
+              memory: {{ .Values.discovery.memLimit }}
+
+---
