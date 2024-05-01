@@ -62,6 +62,9 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_ID }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
+        
+    - name: Set up Docker Repository Prefix
+      run: echo "REPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }}" >> $GITHUB_ENV
+    
     - name: Build and Push Docker Images
       run: mvn spring-boot:build-image -Pk8s -DREPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }} && ./scripts/pushImages.sh
