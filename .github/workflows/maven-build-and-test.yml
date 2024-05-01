@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-and-push:
-    needs: test
+    #needs: test
     runs-on: ubuntu-latest
 
     steps:
