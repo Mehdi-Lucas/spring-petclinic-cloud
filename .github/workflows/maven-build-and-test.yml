@@ -76,19 +76,28 @@ jobs:
         ssh-known-hosts: ${{ secrets.SSH_HOST }}
         ssh-strict: true
         
+    - name: Configure Kubernetes CLI
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }}  'rm -rf $HOME/.kube
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config' 
+        
+    - name: Create secret
+      run: | 
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'kubectl create secret generic wavefront -n spring-petclinic --from-literal=wavefront-url=https://wavefront.surf --from-literal=wavefront-api-token=2e41f7cf-1111-2222-3333-7397a56113c'
+    
+    - name: Apply Kubernetes init-services
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'kubectl apply -f k8s/init-services'
+        
     - name: Run Helm commands on remote machine
       run: |
         ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'helm repo add bitnami https://charts.bitnami.com/bitnami && \
                                           helm repo update && \
-                                          helm install vets-db-mysql bitnami/mysql \
+                                          helm upgrade --install vets-db-mysql bitnami/mysql \
                                             --namespace spring-petclinic \
                                             --version 9.1.4 \
                                             --set auth.database=service_instance_db'
 
-    - name: Configure Kubernetes CLI
-      run: |
-        mkdir -p $HOME/.kube
-        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+
         
-    - name: Deploy to Kubernetes
-      run: kubectl create secret generic wavefront -n spring-petclinic --from-literal=wavefront-url=https://wavefront.surf --from-literal=wavefront-api-token=2e41f7cf-1111-2222-3333-7397a56113ca
