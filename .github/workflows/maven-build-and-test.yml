@@ -68,8 +68,14 @@ jobs:
     
     # - name: Build and Push Docker Images
     #   run: mvn spring-boot:build-image -Pk8s -DREPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }} && ./scripts/pushImages.sh
-
-
+    
+    - name: SSH into machine
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        ssh-known-hosts: ${{ secrets.SSH_HOST }}
+        ssh-strict: true
+        
     - name: Configure Kubernetes CLI
       run: |
         mkdir -p $HOME/.kube
