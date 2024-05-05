@@ -62,6 +62,7 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_ID }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
         
     - name: Set up Docker Repository Prefix
       run: echo "REPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }}" >> $GITHUB_ENV
