@@ -69,7 +69,6 @@ jobs:
     # - name: Build and Push Docker Images
     #   run: mvn spring-boot:build-image -Pk8s -DREPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }} && ./scripts/pushImages.sh
 
-      
     - name: Configure Kubernetes CLI
       run: |
         mkdir -p $HOME/.kube
