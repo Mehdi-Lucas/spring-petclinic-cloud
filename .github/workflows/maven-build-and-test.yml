@@ -70,9 +70,10 @@ jobs:
       run: mvn spring-boot:build-image -Pk8s -DREPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }} && ./scripts/pushImages.sh
       
     - name: Configure Kubernetes CLI
-      env:
-        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG }}
-      run: echo "$KUBE_CONFIG_DATA" > $HOME/.kube/config
-    
+      run: |
+        mkdir ${HOME}/.kube
+        echo ${{ secrets.KUBE_CONFIG }} | base64 --decode > ${HOME}/.kube/config
+        cat ${HOME}/.kube/config
+        
     - name: Deploy to Kubernetes
       run: kubectl create secret generic wavefront -n spring-petclinic --from-literal=wavefront-url=https://wavefront.surf --from-literal=wavefront-api-token=2e41f7cf-1111-2222-3333-7397a56113ca
