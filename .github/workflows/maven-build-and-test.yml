@@ -88,7 +88,8 @@ jobs:
     
     - name: Apply Kubernetes init-services
       run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'kubectl apply -f k8s/init-services'
+        scp -o StrictHostKeyChecking=no -r k8s/init-services ubuntu@${{ secrets.SSH_HOST }}:/tmp/init-services
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'kubectl apply -f /tmp/init-services'
         
     - name: Run Helm commands on remote machine
       run: |
