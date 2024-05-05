@@ -76,6 +76,9 @@ jobs:
         ssh-known-hosts: ${{ secrets.SSH_HOST }}
         ssh-strict: true
         
+    - name: Create Hello World file on remote machine for test
+      run: ssh ubuntu@${{ secrets.SSH_HOST }} 'echo "hello world" > /hello.txt'
+
     - name: Configure Kubernetes CLI
       run: |
         mkdir -p $HOME/.kube
