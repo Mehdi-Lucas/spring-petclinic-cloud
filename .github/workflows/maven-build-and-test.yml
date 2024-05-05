@@ -80,7 +80,7 @@ jobs:
       run: |
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh -o StrictHostKeyChecking=no user@${{ secrets.SSH_HOST }} 'echo "hello world" > /hello.txt'
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'echo "hello world" > /hello.txt'
 
     - name: Configure Kubernetes CLI
       run: |
