@@ -92,14 +92,23 @@ jobs:
         scp -o StrictHostKeyChecking=no -r k8s/init-services ubuntu@${{ secrets.SSH_HOST }}:/tmp/init-services
         ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'kubectl apply -f /tmp/init-services'
         
-    - name: Run Helm commands on remote machine
+    - name: Install database helm charts
       run: |
         ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'helm repo add bitnami https://charts.bitnami.com/bitnami && \
                                           helm repo update && \
                                           helm upgrade --install vets-db-mysql bitnami/mysql \
                                             --namespace spring-petclinic \
                                             --version 9.1.4 \
-                                            --set auth.database=service_instance_db'
+                                            --set auth.database=service_instance_db && \
+                                          helm upgrade --install visits-db-mysql bitnami/mysql \
+                                            --namespace spring-petclinic \
+                                            --version 9.1.4 \
+                                            --set auth.database=service_instance_db && \
+                                          helm upgrade --install customers-db-mysql bitnami/mysql \
+                                            --namespace spring-petclinic \
+                                            --version 9.1.4 \
+                                            --set auth.database=service_instance_db
+                                            '
 
 
         
