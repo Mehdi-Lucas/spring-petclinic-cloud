@@ -76,8 +76,11 @@ jobs:
         ssh-known-hosts: ${{ secrets.SSH_HOST }}
         ssh-strict: true
         
-    - name: Create Hello World file on remote machine for test
-      run: ssh -v -o StrictHostKeyChecking=no user@${{ secrets.SSH_HOST }} 'echo "hello world" > /hello.txt'
+    - name: Create Hello World file on remote machine
+      run: |
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh -o StrictHostKeyChecking=no user@${{ secrets.SSH_HOST }} 'echo "hello world" > /hello.txt'
 
     - name: Configure Kubernetes CLI
       run: |
