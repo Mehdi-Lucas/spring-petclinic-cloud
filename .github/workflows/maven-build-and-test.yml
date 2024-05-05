@@ -78,7 +78,7 @@ jobs:
         
     - name: Run Helm commands on remote machine
       run: |
-        ssh ubuntu@${{ secrets.SSH_HOST }} 'helm repo add bitnami https://charts.bitnami.com/bitnami && \
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'helm repo add bitnami https://charts.bitnami.com/bitnami && \
                                           helm repo update && \
                                           helm install vets-db-mysql bitnami/mysql \
                                             --namespace spring-petclinic \
