@@ -77,7 +77,7 @@ jobs:
         ssh-strict: true
         
     - name: Create Hello World file on remote machine for test
-      run: ssh -o StrictHostKeyChecking=no user@${{ secrets.SSH_HOST }} 'echo "hello world" > /hello.txt'
+      run: ssh -o -v StrictHostKeyChecking=no user@${{ secrets.SSH_HOST }} 'echo "hello world" > /hello.txt'
 
     - name: Configure Kubernetes CLI
       run: |
