@@ -111,7 +111,7 @@ jobs:
                                             '
     - name: Apply Kubernetes deployements
       run: |
-        scp -o StrictHostKeyChecking=no -r ./k8s/*.yaml ubuntu@${{ secrets.SSH_HOST }}:/tmp/k8s
+        scp -o StrictHostKeyChecking=no -r k8s/*.yaml ubuntu@${{ secrets.SSH_HOST }}:/tmp/k8s
         ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'cat /tmp/k8s/*.yaml | \
             sed "s#\${REPOSITORY_PREFIX}#${{ secrets.DOCKERHUB_ID }}#g" | \
             kubectl apply -f -'
