@@ -88,9 +88,9 @@ jobs:
         
     - name: Clean older Kubernetes deployements
       run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }}  'kubectl delete all --all -n spring-petlinic &&
-        kubectl delete pvc --all -n spring-petclinic &&
-        helm uninstall customers-db-mysql vets-db-mysql visits-db-mysql -n spring-petclinic' 
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }}  'kubectl delete all --all -n spring-petlinic || true &&
+        kubectl delete pvc --all -n spring-petclinic || true &&
+        helm uninstall customers-db-mysql vets-db-mysql visits-db-mysql -n spring-petclinic || true' 
         
     - name: Create secret
       run: | 
