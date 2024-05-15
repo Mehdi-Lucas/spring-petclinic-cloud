@@ -76,11 +76,21 @@ jobs:
         ssh-known-hosts: ${{ secrets.SSH_HOST }}
         ssh-strict: true
         
+    - name: Get Kubernetes Access
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }}  'sudo chmod +r /etc/rancher/k3s/k3s.yaml' 
+        
     - name: Configure Kubernetes CLI
       run: |
         ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }}  'rm -rf $HOME/.kube
         mkdir -p $HOME/.kube
         echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config' 
+        
+    - name: Clean older Kubernetes deployements
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }}  'kubectl delete all --all -n spring-petlinic &&
+        kubectl delete pvc --all -n spring-petclinic &&
+        helm uninstall customers-db-mysql vets-db-mysql visits-db-mysql -n spring-petclinic' 
         
     - name: Create secret
       run: | 
