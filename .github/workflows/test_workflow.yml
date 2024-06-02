@@ -1,0 +1,9 @@
+name: Test Workflow
+on: [push]
+
+jobs:
+  test_job:
+    runs-on: self-hosted
+    steps:
+      - name: Print Hello
+        run: echo "Hello from the self-hosted runner"
