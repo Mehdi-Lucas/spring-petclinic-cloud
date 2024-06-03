@@ -9,122 +9,119 @@ on:
       - master
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  # build:
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #   - uses: actions/checkout@v4.1.1
+
+  #   - name: Set up JDK 11
+  #     uses: actions/setup-java@v3.13.0
+  #     with:
+  #       java-version: '11'
+  #       distribution: 'adopt'
+  #       cache: maven
+
+  #   - name: Build with Maven
+  #     run: mvn -B package --file pom.xml
+
+  # test:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #   - uses: actions/checkout@v4.1.1
+
+  #   - name: Set up JDK 11
+  #     uses: actions/setup-java@v3.13.0
+  #     with:
+  #       java-version: '11'
+  #       distribution: 'adopt'
+  #       cache: maven
+
+  #   - name: Run Tests with Maven
+  #     run: mvn test --file pom.xml
+
+  # build-and-push:
+  #   needs: test
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #   - uses: actions/checkout@v4.1.1
+
+  #   - name: Set up JDK 11
+  #     uses: actions/setup-java@v3.13.0
+  #     with:
+  #       java-version: '11'
+  #       distribution: 'adopt'
+  #       cache: maven
+
+  #   - name: Log in to Docker Hub
+  #     uses: docker/login-action@v3.1.0
+  #     with:
+  #       username: ${{ secrets.DOCKERHUB_ID }}
+  #       password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+  #   - name: Set up Docker Repository Prefix
+  #     run: echo "REPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }}" >> $GITHUB_ENV
+
+  #   - name: Build and Push Docker Images
+  #     run: mvn spring-boot:build-image -Pk8s -DREPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }} && ./scripts/pushImages.sh
+
+  deploy:
+    # needs: build-and-push
+    runs-on: self-hosted
 
     steps:
-    - uses: actions/checkout@v4.1.1
-
-    - name: Set up JDK 11
-      uses: actions/setup-java@v3.13.0
-      with:
-        java-version: '11'
-        distribution: 'adopt'
-        cache: maven
-
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
-
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4.1.1
-
-    - name: Set up JDK 11
-      uses: actions/setup-java@v3.13.0
-      with:
-        java-version: '11'
-        distribution: 'adopt'
-        cache: maven
-
-    - name: Run Tests with Maven
-    
-      run: mvn test --file pom.xml
-      
-  build-and-push:
-    needs: test
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4.1.1
-
-    - name: Set up JDK 11
-      uses: actions/setup-java@v3.13.0
-      with:
-        java-version: '11'
-        distribution: 'adopt'
-        cache: maven
-
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3.1.0
-      with:
-        username: ${{ secrets.DOCKERHUB_ID }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        
-    - name: Set up Docker Repository Prefix
-      run: echo "REPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }}" >> $GITHUB_ENV
-    
-    - name: Build and Push Docker Images
-      run: mvn spring-boot:build-image -Pk8s -DREPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }} && ./scripts/pushImages.sh
-    
-    - name: SSH into machine
-      uses: webfactory/ssh-agent@v0.9.0
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-        ssh-known-hosts: ${{ secrets.SSH_HOST }}
-        ssh-strict: true
-        
-    - name: Get Kubernetes Access
+    - name: Install kubectl
       run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }}  'sudo chmod +r /etc/rancher/k3s/k3s.yaml' 
-        
-    - name: Configure Kubernetes CLI
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+    - name: Install Helm
       run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }}  'rm -rf $HOME/.kube
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+    - name: Set up kubeconfig
+      run: |
         mkdir -p $HOME/.kube
-        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config' 
-        
-    - name: Clean older Kubernetes deployements
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+
+    - name: Clean older Kubernetes deployments
       run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }}  'kubectl delete all --all -n spring-petclinic || true &&
+        kubectl delete all --all -n spring-petclinic || true &&
         kubectl delete pvc --all -n spring-petclinic || true &&
-        helm uninstall customers-db-mysql vets-db-mysql visits-db-mysql -n spring-petclinic || true' 
-        
+        helm uninstall customers-db-mysql vets-db-mysql visits-db-mysql -n spring-petclinic || true
+
     - name: Create secret
-      run: | 
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'kubectl delete secret wavefront -n spring-petclinic || true &&
-        kubectl create secret generic wavefront -n spring-petclinic --from-literal=wavefront-url=https://wavefront.surf --from-literal=wavefront-api-token=2e41f7cf-1111-2222-3333-7397a56113c'
-    
-    - name: Apply Kubernetes init-services
       run: |
-        scp -o StrictHostKeyChecking=no -r k8s/init-services ubuntu@${{ secrets.SSH_HOST }}:/tmp/init-services
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'kubectl apply -f /tmp/init-services'
-        
+        kubectl delete secret wavefront -n spring-petclinic || true &&
+        kubectl create secret generic wavefront -n spring-petclinic --from-literal=wavefront-url=https://wavefront.surf --from-literal=wavefront-api-token=2e41f7cf-1111-2222-3333-7397a56113c
+
+    - name: Apply Kubernetes init-services
+      run: kubectl apply -f k8s/init-services
+
     - name: Install database helm charts
       run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'helm repo add bitnami https://charts.bitnami.com/bitnami && \
-                                          helm repo update && \
-                                          helm upgrade --install vets-db-mysql bitnami/mysql \
-                                            --namespace spring-petclinic \
-                                            --version 9.1.4 \
-                                            --set auth.database=service_instance_db && \
-                                          helm upgrade --install visits-db-mysql bitnami/mysql \
-                                            --namespace spring-petclinic \
-                                            --version 9.1.4 \
-                                            --set auth.database=service_instance_db && \
-                                          helm upgrade --install customers-db-mysql bitnami/mysql \
-                                            --namespace spring-petclinic \
-                                            --version 9.1.4 \
-                                            --set auth.database=service_instance_db
-                                            '
-    - name: Apply Kubernetes deployements
-      run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'mkdir -p /tmp/k8s'
-        scp -o StrictHostKeyChecking=no -r k8s/*.yaml ubuntu@${{ secrets.SSH_HOST }}:/tmp/k8s
-        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.SSH_HOST }} 'cat /tmp/k8s/*.yaml | \
-            sed "s#\${REPOSITORY_PREFIX}#${{ secrets.DOCKERHUB_ID }}#g" | \
-            kubectl apply -f -'
+        helm repo add bitnami https://charts.bitnami.com/bitnami &&
+        helm repo update &&
+        helm upgrade --install vets-db-mysql bitnami/mysql \
+          --namespace spring-petclinic \
+          --version 9.1.4 \
+          --set auth.database=service_instance_db &&
+        helm upgrade --install visits-db-mysql bitnami/mysql \
+          --namespace spring-petclinic \
+          --version 9.1.4 \
+          --set auth.database=service_instance_db &&
+        helm upgrade --install customers-db-mysql bitnami/mysql \
+          --namespace spring-petclinic \
+          --version 9.1.4 \
+          --set auth.database=service_instance_db
 
-        
+    - name: Apply Kubernetes deployments
+      run: |
+        mkdir -p /tmp/k8s
+        cp k8s/*.yaml /tmp/k8s
+        cat /tmp/k8s/*.yaml | \
+          sed "s#\${REPOSITORY_PREFIX}#${{ secrets.DOCKERHUB_ID }}#g" | \
+          kubectl apply -f -
