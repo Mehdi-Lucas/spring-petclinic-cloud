@@ -76,55 +76,46 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4.1.1
 
-    - name: Install kubectl
-      run: |
-        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-        sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-
-    - name: Install Helm
-      run: |
-        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
     - name: Set up kubeconfig
       run: |
         mkdir -p $HOME/.kube
         echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
 
-    - name: Clean older Kubernetes deployments
+    - name: Clean older Kubernetes deployments in dev
       run: |
-        kubectl delete all --all -n spring-petclinic || true &&
-        kubectl delete pvc --all -n spring-petclinic || true &&
-        helm uninstall customers-db-mysql vets-db-mysql visits-db-mysql -n spring-petclinic || true
+        kubectl delete all --all -n dev || true &&
+        kubectl delete pvc --all -n dev || true &&
+        helm uninstall customers-db-mysql vets-db-mysql visits-db-mysql -n dev || true
 
-    - name: Create secret
+    - name: Create secret in dev
       run: |
-        kubectl delete secret wavefront -n spring-petclinic || true &&
-        kubectl create secret generic wavefront -n spring-petclinic --from-literal=wavefront-url=https://wavefront.surf --from-literal=wavefront-api-token=2e41f7cf-1111-2222-3333-7397a56113c
+        kubectl delete secret wavefront -n dev || true &&
+        kubectl create secret generic wavefront -n dev --from-literal=wavefront-url=https://wavefront.surf --from-literal=wavefront-api-token=2e41f7cf-1111-2222-3333-7397a56113c
 
-    - name: Apply Kubernetes init-services
-      run: kubectl apply -f k8s/init-services
+    - name: Apply Kubernetes init-services in dev
+      run: kubectl apply -f k8s/init-services -n dev
 
-    - name: Install database helm charts
+    - name: Install database helm charts in dev
       run: |
         helm repo add bitnami https://charts.bitnami.com/bitnami &&
         helm repo update &&
         helm upgrade --install vets-db-mysql bitnami/mysql \
-          --namespace spring-petclinic \
+          --namespace dev \
           --version 9.1.4 \
           --set auth.database=service_instance_db &&
         helm upgrade --install visits-db-mysql bitnami/mysql \
-          --namespace spring-petclinic \
+          --namespace dev \
           --version 9.1.4 \
           --set auth.database=service_instance_db &&
         helm upgrade --install customers-db-mysql bitnami/mysql \
-          --namespace spring-petclinic \
+          --namespace dev \
           --version 9.1.4 \
           --set auth.database=service_instance_db
 
-    - name: Apply Kubernetes deployments
+    - name: Apply Kubernetes deployments in dev
       run: |
         mkdir -p /tmp/k8s
         cp k8s/*.yaml /tmp/k8s
         cat /tmp/k8s/*.yaml | \
           sed "s#\${REPOSITORY_PREFIX}#${{ secrets.DOCKERHUB_ID }}#g" | \
-          kubectl apply -f -
+          kubectl apply -f - -n dev
