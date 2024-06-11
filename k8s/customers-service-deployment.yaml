@@ -6,7 +6,6 @@ metadata:
   labels:
     app: customers-service
   name: customers-service
-  namespace: spring-petclinic
 spec:
   replicas: 1
   selector:

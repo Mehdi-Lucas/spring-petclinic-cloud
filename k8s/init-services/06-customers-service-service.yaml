@@ -5,7 +5,6 @@ metadata:
   labels:
     app: customers-service
   name: customers-service
-  namespace: spring-petclinic
 spec:
   ports:
   - name: "http"

@@ -7,7 +7,6 @@ metadata:
     app: wavefront-proxy
     name: wavefront-proxy
   name: wavefront-proxy
-  namespace: spring-petclinic
 spec:
   replicas: 1
   selector:
