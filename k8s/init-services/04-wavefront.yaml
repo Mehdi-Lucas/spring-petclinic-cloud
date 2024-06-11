@@ -50,7 +50,6 @@ metadata:
   name: wavefront-proxy
   labels:
     app: wavefront-proxy
-  namespace: spring-petclinic
 spec:
   ports:
   - name: wavefront
