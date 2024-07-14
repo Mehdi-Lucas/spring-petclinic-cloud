@@ -179,5 +179,5 @@ jobs:
         cp k8s/*.yaml /tmp/k8s
         cat /tmp/k8s/*.yaml | \
           sed "s#\${REPOSITORY_PREFIX}#${{ secrets.DOCKERHUB_ID }}#g" | \
-          kubectl apply -f
+          kubectl apply -f -
 
