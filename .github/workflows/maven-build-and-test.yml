@@ -69,3 +69,33 @@ jobs:
     
     - name: Build and Push Docker Images
       run: mvn spring-boot:build-image -Pk8s -DREPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }} && ./scripts/pushImages.sh
+  
+  update-push:
+    #needs: build-and-push
+    name: Clone update and Push
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup SSH
+      uses: MrSquaare/ssh-setup-action@v1
+      with:
+          host: github.com
+          private-key: ${{ secrets.PRIVATE_KEY }}
+          
+    - name: Clone repository
+      run: |
+        rm -Rf *
+        git clone git@github.com:Mehdi-Lucas/spring-petclinic-cloud-deployment.git
+        ls
+        cd spring-petclinic-cloud-deployment/
+        cat values.yaml
+        sed -i "s+tag.*+tag: ${GITHUB_SHA}+g" values.yaml
+        cat values.yaml
+    - name: Commit and push changes
+      run: |
+        ls
+        cd spring-petclinic-cloud-deployment
+        git config --global user.name "Mehdi-Lucas"
+        git add -A
+        git commit -m "mis à jour de l'image avec le tag ${GITHUB_SHA}"
+        git push origin master
