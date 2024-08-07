@@ -107,7 +107,7 @@ jobs:
       run: mvn spring-boot:build-image -Pk8s -DREPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }} && ./scripts/pushImages.sh
   
   update-push:
-    #needs: build-and-push
+    needs: build-and-push
     name: Clone update and Push
     runs-on: ubuntu-latest
     steps:
