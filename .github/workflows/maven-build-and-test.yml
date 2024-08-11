@@ -132,6 +132,7 @@ jobs:
         ls
         cd spring-petclinic-cloud-deployment
         git config --global user.name "Mehdi-Lucas"
+        git config --global user.email "${{ secrets.GIT_EMAIL }}"
         git add -A
         git commit -m "mis à jour de l'image avec le tag ${GITHUB_SHA}"
         git push origin master
