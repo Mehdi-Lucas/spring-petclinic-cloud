@@ -77,7 +77,7 @@ jobs:
         name: alerts
         path: ${{ steps.msdo.outputs.sarifFile }}
       
-  Push-Docker-Images:
+  push-docker-images:
     needs: secure
     runs-on: ubuntu-latest
 
@@ -106,8 +106,8 @@ jobs:
     - name: Build and Push Docker Images
       run: mvn spring-boot:build-image -Pk8s -DREPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }} && ./scripts/pushImages.sh
   
-  update-push:
-    needs: build-and-push #comment to test
+  update-second-repo:
+    needs: push-docker-images 
     name: Clone update and Push
     runs-on: ubuntu-latest
     steps:
