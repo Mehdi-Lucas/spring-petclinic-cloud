@@ -77,7 +77,7 @@ jobs:
         name: alerts
         path: ${{ steps.msdo.outputs.sarifFile }}
       
-  build-and-push:
+  Push-Docker-Images:
     needs: secure
     runs-on: ubuntu-latest
 
