@@ -69,7 +69,7 @@ jobs:
       run: mvn spring-boot:build-image -Pk8s -DREPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }} && ./scripts/pushImages.sh
 
   deploy:
-    # needs: build-and-push
+    needs: build-and-push
     runs-on: self-hosted
 
     steps:
