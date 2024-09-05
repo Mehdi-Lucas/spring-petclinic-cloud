@@ -41,9 +41,43 @@ jobs:
 
     - name: Run Tests with Maven
       run: mvn test --file pom.xml
-
-  build-and-push:
+      
+  secure:
     needs: test
+    name: Microsoft Security DevOps Analysis
+    # MSDO runs on windows-latest.
+    # ubuntu-latest also supported
+    runs-on: windows-latest
+    steps:
+      # Checkout your code repository to scan
+    - uses: actions/checkout@v3
+      # Run analyzers
+    - name: Run Microsoft Security DevOps Analysis
+      uses: microsoft/security-devops-action@latest
+      id: msdo
+      with:
+        policy: 'GitHub'
+      # config: string. Optional. A file path to an MSDO configuration file ('*.gdnconfig').
+      # policy: 'GitHub' | 'microsoft' | 'none'. Optional. The name of a well-known Microsoft policy. If no configuration file or list of tools is provided, the policy may instruct MSDO which tools to run. Default: GitHub.
+      # categories: string. Optional. A comma-separated list of analyzer categories to run. Values: 'secrets', 'code', 'artifacts', 'IaC', 'containers. Example: 'IaC,secrets'. Defaults to all.
+      # languages: string. Optional. A comma-separated list of languages to analyze. Example: 'javascript,typescript'. Defaults to all.
+      # tools: string. Optional. A comma-separated list of analyzer tools to run. Values: 'bandit', 'binskim', 'eslint', 'templateanalyzer', 'terrascan', 'trivy'.
+
+      # Upload alerts to the Security tab
+    - name: Upload alerts to Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: ${{ steps.msdo.outputs.sarifFile }}
+
+      # Upload alerts file as a workflow artifact
+    - name: Upload alerts file as a workflow artifact
+      uses: actions/upload-artifact@v3
+      with:  
+        name: alerts
+        path: ${{ steps.msdo.outputs.sarifFile }}
+        
+  push-docker-images:
+    needs: secure
     runs-on: ubuntu-latest
 
     steps:
@@ -62,14 +96,17 @@ jobs:
         username: ${{ secrets.DOCKERHUB_ID }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+        
     - name: Set up Docker Repository Prefix
-      run: echo "REPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }}" >> $GITHUB_ENV
-
+      run: |
+        echo "REPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }}" >> $GITHUB_ENV
+        echo "IMAGE_TAG=${GITHUB_SHA}" >> $GITHUB_ENV
+    
     - name: Build and Push Docker Images
       run: mvn spring-boot:build-image -Pk8s -DREPOSITORY_PREFIX=${{ secrets.DOCKERHUB_ID }} && ./scripts/pushImages.sh
 
   deploy-on-dev:
-    needs: build-and-push
+    needs: push-docker-images
     runs-on: self-hosted
 
     steps:
@@ -119,3 +156,34 @@ jobs:
         cat /tmp/k8s/*.yaml | \
           sed "s#\${REPOSITORY_PREFIX}#${{ secrets.DOCKERHUB_ID }}#g" | \
           kubectl apply -f - -n dev
+          
+  update-second-repo:
+    needs: deploy-on-dev 
+    name: Clone update and Push
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup SSH
+      uses: MrSquaare/ssh-setup-action@v1
+      with:
+          host: github.com
+          private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+    - name: Clone repository
+      run: |
+        rm -Rf *
+        git clone git@github.com:Mehdi-Lucas/spring-petclinic-cloud-deployment.git
+        ls
+        cd spring-petclinic-cloud-deployment/
+        cat values.yaml
+        sed -i "s+tag.*+tag: ${GITHUB_SHA}+g" values.yaml
+        cat values.yaml
+    - name: Commit and push changes
+      run: |
+        ls
+        cd spring-petclinic-cloud-deployment
+        git config --global user.name "Mehdi-Lucas"
+        git config --global user.email "${{ secrets.GIT_EMAIL }}"
+        git add -A
+        git commit -m "mis à jour de l'image avec le tag ${GITHUB_SHA}"
+        git push origin master
